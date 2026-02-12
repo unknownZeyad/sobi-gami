@@ -30,7 +30,7 @@ export default function TeamSocketProvider({
     let ws: WebSocket;
 
     const connect = () => {
-      ws = new WebSocket(`wss://doptelet-dev.quantex-ai.com?team_name=${teamId}&app_name=c3g`);
+      ws = new WebSocket(`wss://doptelet-dev.quantex-ai.com?team_name=${teamId}&app_name=doptlet`);
 
       ws.onopen = () => {
         console.log(`TEAM SOCKET (${teamId}) CONNECTED`);
