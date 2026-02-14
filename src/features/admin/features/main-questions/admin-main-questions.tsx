@@ -81,7 +81,7 @@ export function AdminMainQuestions() {
   }
 
   return (
-    <>
+    <div className="w-full h-full">
       <AnimatePresence mode="wait">
         {showDrawVideo ? (
           <EnterExit
@@ -201,6 +201,6 @@ export function AdminMainQuestions() {
           </ContentLayout>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
