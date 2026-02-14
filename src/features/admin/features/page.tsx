@@ -37,18 +37,28 @@ export default function Admin() {
   return (
     <div className="w-full h-screen bg-black relative">
       <AnimatePresence mode="sync">
-        {phase === "start_experience" && (
-          <StartExperince key="start_experience" />
-        )}
-        {phase === "intro" && <Welcome key="welcome" />}
-        {phase === "speed_intro" && <SpeedIntro key="speed_intro" />}
-        {phase === "speed_question" && <SpeedQuestion key="speed_question" />}
-        {phase === "choosing_clubs" && (
-          <ChoosingClub key="choosing_clubs" />
-        )}
-        {phase === "main_questions" && <AdminMainQuestions key="main_questions" />}
-        {phase === "winner" && <WinnerScreen key="winner" />}
-        {phase === "draw" && <Draw key="draw" />}
+        {(() => {
+          switch (phase) {
+            case "start_experience":
+              return <StartExperince key="start_experience" />;
+            case "intro":
+              return <Welcome key="intro" />;
+            case "speed_intro":
+              return <SpeedIntro key="speed_intro" />;
+            case "speed_question":
+              return <SpeedQuestion key="speed_question" />;
+            case "choosing_clubs":
+              return <ChoosingClub key="choosing_clubs" />;
+            case "main_questions":
+              return <AdminMainQuestions key="main_questions" />; // Static key!
+            case "winner":
+              return <WinnerScreen key="winner" />;
+            case "draw":
+              return <Draw key="draw" />;
+            default:
+              return null;
+          }
+        })()}
       </AnimatePresence>
 
       <motion.button
