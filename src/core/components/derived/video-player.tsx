@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ComponentProps } from 'react';
 
 type Props = ComponentProps<'video'>
@@ -7,10 +7,15 @@ const VideoPlayer: React.FC<Props> = ({ src, ...props }) => {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [useCache, setUseCache] = useState<boolean>(false);
+  const [isFirstTimeLoading, setIsFirstTimeLoading] = useState<boolean>(false);
+  const hasCheckedCache = useRef<boolean>(false);
 
   const url = typeof src === 'string' ? src : undefined;
 
   useEffect(() => {
+    // Prevent re-running if we've already checked cache for this URL
+    if (hasCheckedCache.current) return;
+
     const DB_NAME = 'VideoCache';
     const STORE_NAME = 'videos';
 
@@ -55,18 +60,24 @@ const VideoPlayer: React.FC<Props> = ({ src, ...props }) => {
       });
     };
 
-    // Fetch video and cache it in the background
+    // Fetch video and cache it in the background (doesn't interrupt playback)
     const fetchAndCacheVideo = async (videoUrl: string): Promise<void> => {
       try {
+        setIsFirstTimeLoading(true);
         const response = await fetch(videoUrl);
-        if (!response.ok) return;
+        if (!response.ok) {
+          setIsFirstTimeLoading(false);
+          return;
+        }
 
         const blob = await response.blob();
         const db = await openDatabase();
         await saveVideoToDB(db, videoUrl, blob);
-        console.log('Video cached for next time');
+        console.log('Video cached successfully');
+        setIsFirstTimeLoading(false);
       } catch (err) {
         console.error('Error caching video:', err);
+        setIsFirstTimeLoading(false);
       }
     };
 
@@ -78,7 +89,6 @@ const VideoPlayer: React.FC<Props> = ({ src, ...props }) => {
       }
 
       try {
-        // Keep loading=true during entire DB operation
         setLoading(true);
 
         const db = await openDatabase();
@@ -90,20 +100,22 @@ const VideoPlayer: React.FC<Props> = ({ src, ...props }) => {
           const objectUrl = URL.createObjectURL(videoBlob);
           setVideoSrc(objectUrl);
           setUseCache(true);
+          setLoading(false);
         } else {
           // Video not in cache - use URL directly and cache in background
           console.log('Video not cached, using URL directly');
           setUseCache(false);
-          // Start caching in background
+          setLoading(false);
+          // Start caching in background WITHOUT interrupting playback
           fetchAndCacheVideo(url);
         }
 
-        // Only set loading=false after entire operation completes
-        setLoading(false);
+        hasCheckedCache.current = true;
       } catch (err) {
         console.error('Error checking cache:', err);
         setUseCache(false);
         setLoading(false);
+        hasCheckedCache.current = true;
       }
     };
 
@@ -115,9 +127,14 @@ const VideoPlayer: React.FC<Props> = ({ src, ...props }) => {
         URL.revokeObjectURL(videoSrc);
       }
     };
-  }, [url, videoSrc]);
+  }, [url]);
 
-  // Return null while checking IndexedDB (during DB connection and retrieval)
+  // Reset cache check flag when URL changes
+  useEffect(() => {
+    hasCheckedCache.current = false;
+  }, [url]);
+
+  // Return null while checking IndexedDB
   if (loading) {
     return null;
   }
@@ -125,25 +142,40 @@ const VideoPlayer: React.FC<Props> = ({ src, ...props }) => {
   // If video is cached, use the blob URL
   if (useCache && videoSrc) {
     return (
-      <video
-        {...props}
-        src={videoSrc}
-        controls
-      >
-        Your browser does not support the video tag.
-      </video>
+      <div className="relative">
+        <video
+          {...props}
+          src={videoSrc}
+          controls
+        >
+          Your browser does not support the video tag.
+        </video>
+      </div>
     );
   }
 
   // If video is not cached, use the original URL
   return (
-    <video
-      {...props}
-      src={url}
-      controls
-    >
-      Your browser does not support the video tag.
-    </video>
+    <>
+      <video
+        {...props}
+        src={url}
+        controls
+      >
+        Your browser does not support the video tag.
+      </video>
+
+      {/* Show loading indicator while caching in background */}
+      {isFirstTimeLoading && (
+        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1.5">
+          <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Caching...</span>
+        </div>
+      )}
+    </>
   );
 };
 
