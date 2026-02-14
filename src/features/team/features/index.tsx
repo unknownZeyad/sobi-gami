@@ -172,7 +172,7 @@ export default function Team() {
 
     return (
         <div className="w-full h-screen bg-black">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="sync">
                 {showDrawVideo && <HoldDialog />}
                 {phase === "wating" && <Wating key="wating" />}
                 {phase === "welcome" && <Welcomes key="welcomes" />}

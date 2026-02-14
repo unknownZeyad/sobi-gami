@@ -33,7 +33,7 @@ export default function Admin() {
     socket?.send(JSON.stringify({ event: 'terminate_game' }));
     setShowResetConfirm(false);
   };
-
+  console.log(phase)
   return (
     <div className="w-full h-screen bg-black relative">
       <AnimatePresence mode="sync">
